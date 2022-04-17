@@ -69,6 +69,8 @@ for (i in 1:length(cities)) {
 names(cities_counties_codes) <- str_replace_all(tolower(cities), " ", "_")
 
 for (i in 1) {
+  print(paste0(Sys.time(), ": ", cities[i], " - Loop starts"))
+  
   # Load block-level demographic data 
   city_block <- create_block_table(state = cities_states_codes[i], 
                                    county = cities_counties_codes[[i]],
@@ -76,22 +78,22 @@ for (i in 1) {
   #city_block <- sf::read_sf(
   #paste0('CleanedData/CityDemographic/Block/', 
   #str_replace_all(tolower(cities[i]), " ", "_"), '_city_demographic_block.shp'))
-  print(paste0(cities[i], " - Block data download complete"))
+  print(paste0(Sys.time(), ": ", cities[i], " - Block data download complete"))
   
   # Load precinct-level partisanship data
   city_prct <- sf::read_sf(
     paste0('CleanedData/CityElectionReturns/', 
            str_replace_all(tolower(cities[i]), " ", "_"), '_city_election_returns.shp'))
   
-  print(paste0(cities[i], " - Precinct data download complete"))
+  print(paste0(Sys.time(), ": ", cities[i], " - Precinct data download complete"))
   
   # Load city council district geometry
   city_cd <- sf::read_sf(
     paste0('CleanedData/CityCouncilDistrict/',
            str_replace_all(tolower(cities[i]), " ", "_"), '_city_council_district.shp'))
   
-  print(paste0(cities[i], " - Council district data download complete"))
-  
+  print(paste0(Sys.time(), ": ", cities[i], " - Council district data download complete"))
+  Sys.time()
   # Make sure the three data use the same CRS
   # 'city_block' is the benchmark b/c it uses the default CRS of the package
   city_prct <- st_transform(city_prct, st_crs(city_block))
@@ -101,28 +103,25 @@ for (i in 1) {
   city_block <- city_block %>% 
     geo_filter(to = city_cd)
   
-  print(paste0(cities[i], " - Filtering complete"))
-  
+  print(paste0(Sys.time(), ": ", cities[i], " - Filtering complete"))
+  Sys.time()
   city_block$trim <- city_block %>% 
     geo_trim(to = city_cd, bool = TRUE)
   
   city_block <- city_block %>%
     filter(trim)
   
-  print(paste0(cities[i], " - Trimming complete"))
-  
+  print(paste0(Sys.time(), ": ", cities[i], " - Trimming complete"))
   # Match voting blocks to the precincts
   # Put in the samller unit in from, bigger unit in to
   matchprct <- geo_match(from = city_block, to = city_prct)
   
-  print(paste0(cities[i], " - Geomatching complete"))
-  
+  print(paste0(Sys.time(), ": ", cities[i], " - Geomatching complete"))
   # Create spatially-weighted estimates
   city_block$biden <-estimate_down(wts = city_block$vap, value = city_prct$g20predbid, group=matchprct)
   city_block$trump<-estimate_down(wts = city_block$vap, value = city_prct$g20prertru, group=matchprct)
   
-  print(paste0(cities[i], " - Spatial weighting complete"))
-  
+  print(paste0(Sys.time(), ": ", cities[i], " - Spatial weighting complete"))
   # Save the new object in the environment
   assign(paste0(str_replace_all(tolower(cities[i]), " ", "_"), "_geomander_block"), city_block)
   
